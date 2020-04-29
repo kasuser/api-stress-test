@@ -5,7 +5,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
-	"github.com/pkg/errors"
 	"log"
 	"math/rand"
 	"net/http"
@@ -22,28 +21,14 @@ type Application struct {
 
 var Apps []Application
 var letters = []rune("abcdefghijklmnopqrstuvwxyz")
-var db *gorm.DB
 
 func RegisterHandlers(r *mux.Router) {
-	db1, err := gorm.Open("sqlite3", "test.db")
-	if err != nil {
-		errors.Wrap(err, "failed to connect database")
-	}
-
-	db = db1
-
-	//defer db.Close()
-
-	db.DropTableIfExists(&Application{})
-	db.AutoMigrate(&Application{})
-
 	for i := 0; i < 50; i++ {
 		app := Application{Code: getRandCode(), Canceled: false, Usages: 0}
-		db.Create(&app)
 		Apps = append(Apps, app)
 	}
 
-	go timer(db)
+	go timer()
 
 	r.HandleFunc("/request", handleRequest).Methods("GET")
 	r.HandleFunc("/admin/request", handleAdminRequest).Methods("GET")
@@ -54,7 +39,6 @@ func handleRequest(writer http.ResponseWriter, request *http.Request) {
 
 	randApp := Apps[randAppKey]
 	randApp.Usages++
-	db.Save(&randApp)
 
 	Apps[randAppKey] = randApp
 
@@ -76,20 +60,14 @@ func handleAdminRequest(writer http.ResponseWriter, request *http.Request) {
 	writer.Write(jsonValue)
 }
 
-func timer(db *gorm.DB) {
+func timer() {
 	t := time.NewTicker(200 * time.Millisecond)
 	for range t.C {
 		randAppKey := rand.Intn(len(Apps))
-
-		randApp := Apps[randAppKey]
-		db.Delete(&randApp)
-
 		Apps = append(Apps[:randAppKey], Apps[randAppKey + 1:]...)
 
 		app := Application{Code: getRandCode(), Canceled: false, Usages: 0}
-		db.Create(&app)
 		Apps = append(Apps, app)
-		log.Println(len(Apps))
 	}
 }
 
