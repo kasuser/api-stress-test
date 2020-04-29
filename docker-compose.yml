@@ -1,0 +1,15 @@
+version: '3.7'
+
+services:
+  go:
+    build: .
+    ports:
+      - ${HOST_PORT}:8080
+    volumes:
+      - .:/go/src/test
+    working_dir: /go/src/test
+    command: go run main.go
+    env_file:
+      - .env
+    environment:
+      - PROJECT_DIR=/go/src/test
