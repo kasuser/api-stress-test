@@ -1,15 +1,15 @@
 package main
 
 import (
-	"github.com/gorilla/mux"
+	"github.com/fasthttp/router"
+	"github.com/valyala/fasthttp"
 	"log"
-	"net/http"
 	"testpr/pkg/api"
 )
+
 func main() {
-	r := mux.NewRouter()
+	r := router.New()
 	api.RegisterHandlers(r)
 
-	http.Handle("/", r)
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Fatal(fasthttp.ListenAndServe(":8080", r.Handler))
 }

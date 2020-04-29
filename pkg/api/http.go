@@ -2,12 +2,12 @@ package api
 
 import (
 	"encoding/json"
-	"github.com/gorilla/mux"
+	"github.com/fasthttp/router"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
+	"github.com/valyala/fasthttp"
 	"math/rand"
-	"net/http"
-	"net/http/pprof"
+	pprof2 "runtime/pprof"
 	"strconv"
 	"time"
 )
@@ -21,7 +21,7 @@ type Application struct {
 var Apps []Application
 var letters = []rune("abcdefghijklmnopqrstuvwxyz")
 
-func RegisterHandlers(r *mux.Router) {
+func RegisterHandlers(r *router.Router) {
 	for i := 0; i < 50; i++ {
 		app := Application{Code: getRandCode(), Usages: 0}
 		Apps = append(Apps, app)
@@ -29,17 +29,13 @@ func RegisterHandlers(r *mux.Router) {
 
 	go updateApplications()
 
-	r.HandleFunc("/request", handleRequest).Methods("GET")
-	r.HandleFunc("/admin/request", handleAdminRequest).Methods("GET")
+	r.GET("/request", handleRequest)
+	r.GET("/admin/request", handleAdminRequest)
 
-	r.HandleFunc("/debug/pprof/", pprof.Index)
-	r.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
-	r.HandleFunc("/debug/pprof/profile", pprof.Profile)
-	r.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
-	r.HandleFunc("/debug/pprof/trace", pprof.Trace)
+	r.GET("/debug/pprof/profile", handleProfilerRequest)
 }
 
-func handleRequest(writer http.ResponseWriter, request *http.Request) {
+func handleRequest(ctx *fasthttp.RequestCtx) {
 	randAppKey := rand.Intn(len(Apps))
 
 	randApp := Apps[randAppKey]
@@ -48,10 +44,10 @@ func handleRequest(writer http.ResponseWriter, request *http.Request) {
 	Apps[randAppKey] = randApp
 
 	jsonValue, _ := json.Marshal(randApp.Code)
-	writer.Write(jsonValue)
+	ctx.Write(jsonValue)
 }
 
-func handleAdminRequest(writer http.ResponseWriter, request *http.Request) {
+func handleAdminRequest(ctx *fasthttp.RequestCtx) {
 	values := map[string]string{}
 
 	for _, app := range Apps {
@@ -62,7 +58,18 @@ func handleAdminRequest(writer http.ResponseWriter, request *http.Request) {
 
 	jsonValue, _ := json.Marshal(values)
 
-	writer.Write(jsonValue)
+	ctx.Write(jsonValue)
+}
+
+func handleProfilerRequest(ctx *fasthttp.RequestCtx) {
+	ctx.Request.Header.Set("X-Content-Type-Options", "nosniff")
+
+	sec := 30
+
+	pprof2.StartCPUProfile(ctx.Response.BodyWriter())
+
+	time.Sleep( time.Duration(sec)*time.Second)
+	pprof2.StopCPUProfile()
 }
 
 func updateApplications() {
