@@ -5,9 +5,9 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
-	"log"
 	"math/rand"
 	"net/http"
+	"net/http/pprof"
 	"strconv"
 	"time"
 )
@@ -15,7 +15,6 @@ import (
 type Application struct {
 	gorm.Model
 	Code string
-	Canceled bool
 	Usages uint
 }
 
@@ -24,14 +23,20 @@ var letters = []rune("abcdefghijklmnopqrstuvwxyz")
 
 func RegisterHandlers(r *mux.Router) {
 	for i := 0; i < 50; i++ {
-		app := Application{Code: getRandCode(), Canceled: false, Usages: 0}
+		app := Application{Code: getRandCode(), Usages: 0}
 		Apps = append(Apps, app)
 	}
 
-	go timer()
+	go updateApplications()
 
 	r.HandleFunc("/request", handleRequest).Methods("GET")
 	r.HandleFunc("/admin/request", handleAdminRequest).Methods("GET")
+
+	r.HandleFunc("/debug/pprof/", pprof.Index)
+	r.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+	r.HandleFunc("/debug/pprof/profile", pprof.Profile)
+	r.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+	r.HandleFunc("/debug/pprof/trace", pprof.Trace)
 }
 
 func handleRequest(writer http.ResponseWriter, request *http.Request) {
@@ -60,13 +65,13 @@ func handleAdminRequest(writer http.ResponseWriter, request *http.Request) {
 	writer.Write(jsonValue)
 }
 
-func timer() {
+func updateApplications() {
 	t := time.NewTicker(200 * time.Millisecond)
 	for range t.C {
 		randAppKey := rand.Intn(len(Apps))
 		Apps = append(Apps[:randAppKey], Apps[randAppKey + 1:]...)
 
-		app := Application{Code: getRandCode(), Canceled: false, Usages: 0}
+		app := Application{Code: getRandCode(), Usages: 0}
 		Apps = append(Apps, app)
 	}
 }
