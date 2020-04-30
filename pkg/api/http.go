@@ -1,10 +1,9 @@
 package api
 
 import (
-	"encoding/json"
+	"bytes"
+	"fmt"
 	"github.com/fasthttp/router"
-	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/sqlite"
 	"github.com/valyala/fasthttp"
 	"math/rand"
 	pprof2 "runtime/pprof"
@@ -13,7 +12,6 @@ import (
 )
 
 type Application struct {
-	gorm.Model
 	Code string
 	Usages uint
 }
@@ -43,22 +41,25 @@ func handleRequest(ctx *fasthttp.RequestCtx) {
 
 	Apps[randAppKey] = randApp
 
-	jsonValue, _ := json.Marshal(randApp.Code)
-	ctx.Write(jsonValue)
+	ctx.WriteString(randApp.Code)
 }
 
 func handleAdminRequest(ctx *fasthttp.RequestCtx) {
 	values := map[string]string{}
 
 	for _, app := range Apps {
-		if app.Usages != 0 {
-			values[app.Code] = strconv.Itoa(int(app.Usages))
-		}
+		values[app.Code] = strconv.Itoa(int(app.Usages))
 	}
 
-	jsonValue, _ := json.Marshal(values)
+	ctx.Write(createKeyValuePairs(values))
+}
 
-	ctx.Write(jsonValue)
+func createKeyValuePairs(m map[string]string) []byte {
+	b := new(bytes.Buffer)
+	for key, value := range m {
+		fmt.Fprintf(b, "%s-%s", key, value)
+	}
+	return b.Bytes()
 }
 
 func handleProfilerRequest(ctx *fasthttp.RequestCtx) {
