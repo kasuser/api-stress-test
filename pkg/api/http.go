@@ -7,7 +7,6 @@ import (
 	"github.com/valyala/fasthttp"
 	"math/rand"
 	"runtime/pprof"
-	"strconv"
 	"time"
 )
 
@@ -44,21 +43,13 @@ func handleRequest(ctx *fasthttp.RequestCtx) {
 }
 
 func handleAdminRequest(ctx *fasthttp.RequestCtx) {
-	values := map[string]string{}
+	buf := new(bytes.Buffer)
 
 	for _, app := range apps {
-		values[app.Code] = strconv.Itoa(int(app.Usages))
+		fmt.Fprintf(buf, "%s-%d\n", app.Code, app.Usages)
 	}
 
-	ctx.Write(createKeyValuePairs(values))
-}
-
-func createKeyValuePairs(m map[string]string) []byte {
-	b := new(bytes.Buffer)
-	for key, value := range m {
-		fmt.Fprintf(b, "%s-%s", key, value)
-	}
-	return b.Bytes()
+	ctx.Write(buf.Bytes())
 }
 
 func handleProfilerRequest(ctx *fasthttp.RequestCtx) {
