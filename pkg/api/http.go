@@ -6,13 +6,13 @@ import (
 	"github.com/fasthttp/router"
 	"github.com/valyala/fasthttp"
 	"math/rand"
-	pprof2 "runtime/pprof"
+	"runtime/pprof"
 	"strconv"
 	"time"
 )
 
 type Application struct {
-	Code string
+	Code   string
 	Usages uint
 }
 
@@ -33,7 +33,7 @@ func RegisterHandlers(r *router.Router) {
 }
 
 func handleRequest(ctx *fasthttp.RequestCtx) {
-	randAppKey := rand.Intn(len(apps))
+	randAppKey := rand.Int63() % int64(len(letters))
 
 	randApp := apps[randAppKey]
 	randApp.Usages++
@@ -64,27 +64,23 @@ func createKeyValuePairs(m map[string]string) []byte {
 func handleProfilerRequest(ctx *fasthttp.RequestCtx) {
 	ctx.Request.Header.Set("X-Content-Type-Options", "nosniff")
 
-	sec := 30
+	pprof.StartCPUProfile(ctx.Response.BodyWriter())
 
-	pprof2.StartCPUProfile(ctx.Response.BodyWriter())
-
-	time.Sleep( time.Duration(sec)*time.Second)
-	pprof2.StopCPUProfile()
+	time.Sleep(time.Duration(30) * time.Second)
+	pprof.StopCPUProfile()
 }
 
 func updateApplications() {
 	t := time.NewTicker(200 * time.Millisecond)
 	for range t.C {
-		randAppKey := rand.Intn(len(apps))
-
-		apps[randAppKey] = Application{Code: getRandCode(), Usages: 0}
+		apps[rand.Int63() % int64(len(letters))] = Application{Code: getRandCode(), Usages: 0}
 	}
 }
 
 func getRandCode() string {
 	c := make([]rune, 2)
 	for i := range c {
-		c[i] = letters[rand.Intn(len(letters))]
+		c[i] = letters[rand.Int63() % int64(len(letters))]
 	}
 	return string(c)
 }
