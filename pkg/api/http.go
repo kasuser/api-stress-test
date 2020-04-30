@@ -16,13 +16,12 @@ type Application struct {
 	Usages uint
 }
 
-var Apps []Application
+var apps [50]Application
 var letters = []rune("abcdefghijklmnopqrstuvwxyz")
 
 func RegisterHandlers(r *router.Router) {
 	for i := 0; i < 50; i++ {
-		app := Application{Code: getRandCode(), Usages: 0}
-		Apps = append(Apps, app)
+		apps[i] = Application{Code: getRandCode(), Usages: 0}
 	}
 
 	go updateApplications()
@@ -34,12 +33,12 @@ func RegisterHandlers(r *router.Router) {
 }
 
 func handleRequest(ctx *fasthttp.RequestCtx) {
-	randAppKey := rand.Intn(len(Apps))
+	randAppKey := rand.Intn(len(apps))
 
-	randApp := Apps[randAppKey]
+	randApp := apps[randAppKey]
 	randApp.Usages++
 
-	Apps[randAppKey] = randApp
+	apps[randAppKey] = randApp
 
 	ctx.WriteString(randApp.Code)
 }
@@ -47,7 +46,7 @@ func handleRequest(ctx *fasthttp.RequestCtx) {
 func handleAdminRequest(ctx *fasthttp.RequestCtx) {
 	values := map[string]string{}
 
-	for _, app := range Apps {
+	for _, app := range apps {
 		values[app.Code] = strconv.Itoa(int(app.Usages))
 	}
 
@@ -76,11 +75,9 @@ func handleProfilerRequest(ctx *fasthttp.RequestCtx) {
 func updateApplications() {
 	t := time.NewTicker(200 * time.Millisecond)
 	for range t.C {
-		randAppKey := rand.Intn(len(Apps))
-		Apps = append(Apps[:randAppKey], Apps[randAppKey + 1:]...)
+		randAppKey := rand.Intn(len(apps))
 
-		app := Application{Code: getRandCode(), Usages: 0}
-		Apps = append(Apps, app)
+		apps[randAppKey] = Application{Code: getRandCode(), Usages: 0}
 	}
 }
 
