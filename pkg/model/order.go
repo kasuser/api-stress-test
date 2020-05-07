@@ -2,6 +2,7 @@ package model
 
 import (
 	"math/rand"
+	"sync"
 )
 
 type order struct {
@@ -11,6 +12,7 @@ type order struct {
 
 var letters = []rune("abcdefghijklmnopqrstuvwxyz")
 var orders [50]order
+var OrdMutex sync.Mutex
 
 // Orders returns slice with orders
 func Orders() *[50]order {
@@ -23,16 +25,20 @@ func InitializeOrders() {
 		orders[i] = order{Code: getRandCode(), Usages: 0}
 	}
 }
+
 // UpdateActualOrders substitutes a new order instead one of existing. It
 // should be start by timer
 func UpdateActualOrders() {
-	orders[rand.Int63() % int64(len(letters))] = order{Code: getRandCode(), Usages: 0}
+	OrdMutex.Lock()
+	defer OrdMutex.Unlock()
+
+	orders[rand.Int63()%int64(len(letters))] = order{Code: getRandCode(), Usages: 0}
 }
 
 func getRandCode() string {
 	c := make([]rune, 2)
 	for i := range c {
-		c[i] = letters[rand.Int63() % int64(len(letters))]
+		c[i] = letters[rand.Int63()%int64(len(letters))]
 	}
 	return string(c)
 }

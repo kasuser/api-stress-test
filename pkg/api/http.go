@@ -23,10 +23,13 @@ func RegisterHandlers(r *router.Router) {
 func handleRequest(ctx *fasthttp.RequestCtx) {
 	randOrderKey := rand.Int63() % int64(len(model.Orders()))
 
-	randApp := model.Orders()[randOrderKey]
+	model.OrdMutex.Lock()
+	defer model.OrdMutex.Unlock()
+
+	randApp := &model.Orders()[randOrderKey]
 	randApp.Usages++
 
-	model.Orders()[randOrderKey] = randApp
+	model.Orders()[randOrderKey] = *randApp
 
 	ctx.WriteString(randApp.Code)
 }
