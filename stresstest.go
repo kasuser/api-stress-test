@@ -1,5 +1,5 @@
 //Package Stresstest is just an example of solving a test task.
-package main
+package stresstest
 
 import (
 	"github.com/fasthttp/router"

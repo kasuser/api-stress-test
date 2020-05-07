@@ -11,10 +11,12 @@ import (
 	"time"
 )
 
+// RegisterHandlers just registers handlers
 func RegisterHandlers(r *router.Router) {
 	r.GET("/request", handleRequest)
 	r.GET("/admin/request", handleAdminRequest)
 
+	// pprof request handler
 	r.GET("/debug/pprof/profile", handleProfilerRequest)
 }
 
