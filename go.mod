@@ -1,4 +1,4 @@
-module testpr
+module stresstest
 
 go 1.14
 

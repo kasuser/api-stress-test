@@ -1,10 +1,11 @@
+//Package Stresstest is just an example of solving a test task.
 package main
 
 import (
 	"github.com/fasthttp/router"
 	"github.com/valyala/fasthttp"
 	"log"
-	"testpr/pkg/api"
+	"stresstest/pkg/api"
 )
 
 func main() {
