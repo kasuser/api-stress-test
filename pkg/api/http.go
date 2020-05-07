@@ -7,24 +7,11 @@ import (
 	"github.com/valyala/fasthttp"
 	"math/rand"
 	"runtime/pprof"
+	"stresstest/pkg/model"
 	"time"
 )
 
-type Application struct {
-	Code   string
-	Usages uint
-}
-
-var apps [50]Application
-var letters = []rune("abcdefghijklmnopqrstuvwxyz")
-
 func RegisterHandlers(r *router.Router) {
-	for i := 0; i < 50; i++ {
-		apps[i] = Application{Code: getRandCode(), Usages: 0}
-	}
-
-	go updateApplications()
-
 	r.GET("/request", handleRequest)
 	r.GET("/admin/request", handleAdminRequest)
 
@@ -32,12 +19,12 @@ func RegisterHandlers(r *router.Router) {
 }
 
 func handleRequest(ctx *fasthttp.RequestCtx) {
-	randAppKey := rand.Int63() % int64(len(letters))
+	randOrderKey := rand.Int63() % int64(len(model.Orders()))
 
-	randApp := apps[randAppKey]
+	randApp := model.Orders()[randOrderKey]
 	randApp.Usages++
 
-	apps[randAppKey] = randApp
+	model.Orders()[randOrderKey] = randApp
 
 	ctx.WriteString(randApp.Code)
 }
@@ -45,8 +32,8 @@ func handleRequest(ctx *fasthttp.RequestCtx) {
 func handleAdminRequest(ctx *fasthttp.RequestCtx) {
 	buf := new(bytes.Buffer)
 
-	for _, app := range apps {
-		fmt.Fprintf(buf, "%s-%d\n", app.Code, app.Usages)
+	for _, o := range model.Orders() {
+		fmt.Fprintf(buf, "%s-%d\n", o.Code, o.Usages)
 	}
 
 	ctx.Write(buf.Bytes())
@@ -59,19 +46,4 @@ func handleProfilerRequest(ctx *fasthttp.RequestCtx) {
 
 	time.Sleep(time.Duration(30) * time.Second)
 	pprof.StopCPUProfile()
-}
-
-func updateApplications() {
-	t := time.NewTicker(200 * time.Millisecond)
-	for range t.C {
-		apps[rand.Int63() % int64(len(letters))] = Application{Code: getRandCode(), Usages: 0}
-	}
-}
-
-func getRandCode() string {
-	c := make([]rune, 2)
-	for i := range c {
-		c[i] = letters[rand.Int63() % int64(len(letters))]
-	}
-	return string(c)
 }

@@ -6,9 +6,20 @@ import (
 	"github.com/valyala/fasthttp"
 	"log"
 	"stresstest/pkg/api"
+	"stresstest/pkg/model"
+	"time"
 )
 
 func main() {
+	model.InitializeOrders()
+
+	go func() {
+		t := time.NewTicker(200 * time.Millisecond)
+		for range t.C {
+			model.UpdateActualOrders()
+		}
+	}()
+
 	r := router.New()
 	api.RegisterHandlers(r)
 
