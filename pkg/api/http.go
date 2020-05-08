@@ -13,14 +13,14 @@ import (
 
 // RegisterHandlers just registers handlers
 func RegisterHandlers(r *router.Router) {
-	r.GET("/request", handleRequest)
-	r.GET("/admin/request", handleAdminRequest)
+	r.GET("/request", func(ctx *fasthttp.RequestCtx) { ctx.Write(HandleRequest()) })
+	r.GET("/admin/request", func(ctx *fasthttp.RequestCtx) { ctx.Write(HandleAdminRequest()) })
 
 	// pprof request handler
 	r.GET("/debug/pprof/profile", handleProfilerRequest)
 }
 
-func handleRequest(ctx *fasthttp.RequestCtx) {
+func HandleRequest() []byte {
 	randOrderKey := rand.Int63() % int64(len(model.Orders()))
 
 	model.OrdMutex.Lock()
@@ -31,17 +31,17 @@ func handleRequest(ctx *fasthttp.RequestCtx) {
 
 	model.Orders()[randOrderKey] = *randApp
 
-	ctx.WriteString(randApp.Code)
+	return []byte(randApp.Code)
 }
 
-func handleAdminRequest(ctx *fasthttp.RequestCtx) {
+func HandleAdminRequest() []byte {
 	buf := new(bytes.Buffer)
 
 	for _, o := range model.Orders() {
 		fmt.Fprintf(buf, "%s-%d\n", o.Code, o.Usages)
 	}
 
-	ctx.Write(buf.Bytes())
+	return buf.Bytes()
 }
 
 func handleProfilerRequest(ctx *fasthttp.RequestCtx) {
