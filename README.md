@@ -1,4 +1,4 @@
-# kasuser/stresstest
+# kasuser/api-stress-test
 Simple backend API service and synthetic stress test.
 
 ## Requirements
